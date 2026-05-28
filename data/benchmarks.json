@@ -1,0 +1,6 @@
+{
+  "frontend": "GPT-4o",
+  "branding": "Claude-3.5",
+  "research": "Gemini-1.5",
+  "backend": "GPT-4o"
+}
