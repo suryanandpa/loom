@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 
 const YELLOW = "#F5C518";
@@ -777,10 +779,10 @@ const FEATURES = [
 ];
 
 const SOCIALS = [
-  { icon: "in", label: "LinkedIn", handle: "/in/loom-founder", href: "#" },
-  { icon: "𝕏", label: "Twitter / X", handle: "@loom_ai", href: "#" },
-  { icon: "gh", label: "GitHub", handle: "github.com/loom-ai", href: "#" },
-  { icon: "✉", label: "Email", handle: "hello@loom.ai", href: "#" },
+  { icon: "in", label: "LinkedIn", handle: "linkedin.com/in/suryanandpa", href: "https://www.linkedin.com/in/suryanandpa" },
+  { icon: "𝕏", label: "Twitter / X", handle: "@suryanandpa", href: "https://x.com/suryanandpa" },
+  { icon: "gh", label: "GitHub", handle: "@suryanandpa", href: "https://github.com/suryanandpa" },
+  { icon: "✉", label: "Email", handle: "hello.suryanand@gmail.com", href: "mailto:hello.suryanand@gmail.com" },
 ];
 
 function useReveal() {
@@ -970,9 +972,9 @@ export default function LoomLanding() {
           {/* Card */}
           <RevealDiv delay={100}>
             <div className="dev-card">
-              <div className="dev-avatar">L</div>
-              <div className="dev-name">The Dev</div>
-              <div className="dev-role">Founder & Builder</div>
+              <div className="dev-avatar">S</div>
+              <div className="dev-name">SuryaNand PA</div>
+              <div className="dev-role">Lead Orchestration Architect</div>
               <div className="dev-divider" />
               <div className="social-links">
                 {SOCIALS.map((s) => (
@@ -1025,7 +1027,12 @@ export default function LoomLanding() {
           <a href="#">Privacy</a>
           <a href="#">Contact</a>
         </div>
-        <div className="footer-copy">© 2025 Loom · All rights reserved</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          <div className="footer-copy">© 2025 Loom · Built by SuryaNand PA</div>
+          <div className="footer-copy" style={{ maxWidth: 420, textAlign: "right", lineHeight: 1.6 }}>
+            Loom is an experimental project built purely for fun. If the orchestration engine hallucinates, loops, or breaks reality, SuryaNand PA holds absolute zero liability. Use at your own risk.
+          </div>
+        </div>
       </footer>
     </>
   );
