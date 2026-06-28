@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { supabaseAdmin } from "@/lib/supabase";
-import localBenchmarks from "@/data/benchmarks.json";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -21,31 +20,63 @@ interface OrchestrationResponse {
   grounded: boolean;
 }
 
-// ─── Web-Grounded LLM Breakdown (Gemini + Google Search) ─────────────────────
+// ─── Phase 1: Task Splitting ─────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are the Loom Orchestrator — an advanced AI task decomposition and model routing engine.
+const SPLIT_PROMPT = `You are the Loom Orchestrator — an AI task decomposition engine.
 
-Your job is to:
-1. Break the user's high-level request into 2-5 sequential subtasks.
-2. For EACH subtask, search the web for the BEST AI model currently available to handle that specific type of work. Consider the latest benchmarks, leaderboards (like LMSYS Chatbot Arena, Artificial Analysis), recent model releases, and real-world performance reviews.
-3. Classify each subtask into one of these categories: "frontend", "backend", "branding", "research", "design", "devops", or "other".
+Break the user's request into 2-5 sequential subtasks.
 
-Return ONLY a valid JSON array. No markdown, no explanation, no code fences.
+Classify each subtask into EXACTLY ONE of these categories:
+- "frontend" (UI, design systems, client-side code, layouts)
+- "backend" (APIs, databases, server logic, infrastructure)
+- "branding" (logos, brand identity, naming, copy, marketing assets)
+- "research" (market analysis, competitor research, data gathering)
+- "design" (UX wireframes, prototyping, design systems)
+- "devops" (CI/CD, deployment, infrastructure, monitoring)
 
-Each object in the array MUST have these exact fields:
-- "task": A clear description of the subtask
-- "category": One of the categories listed above
-- "model": The specific AI model name you recommend (e.g., "Claude 4 Opus", "GPT-4o", "Gemini 2.5 Pro", "Llama 4 Maverick", etc.)
-- "reasoning": A brief 1-sentence explanation of WHY this model is the best choice for this specific subtask, referencing current benchmarks or capabilities
+Return ONLY a valid JSON array. No markdown, no explanation.
 
-Example output:
+Example:
 [
-  {"task": "Research competitor landscape and pricing", "category": "research", "model": "Gemini 2.5 Pro", "reasoning": "Top-ranked for research tasks with native Google Search grounding and 1M token context window."},
-  {"task": "Design the database schema and REST API", "category": "backend", "model": "Claude 4 Opus", "reasoning": "Leads SWE-bench and HumanEval for complex code generation and system design."},
-  {"task": "Build the responsive dashboard UI", "category": "frontend", "model": "GPT-4o", "reasoning": "Strong at React/Next.js code generation with excellent instruction following."}
+  {"task": "Research competitor pricing models", "category": "research"},
+  {"task": "Design the database schema", "category": "backend"},
+  {"task": "Build the landing page", "category": "frontend"}
 ]`;
 
-async function breakdownWithGroundedLLM(task: string): Promise<{ subtasks: Subtask[]; grounded: boolean }> {
+// ─── Phase 2: Model Recommendation (Web-Grounded) ───────────────────────────
+
+function buildModelSearchPrompt(categories: string[]): string {
+  const today = new Date().toISOString().split("T")[0];
+  const uniqueCats = [...new Set(categories)];
+
+  return `You are an AI model analyst. Today's date is ${today}.
+
+IMPORTANT: Your training data may be outdated. You MUST use Google Search to look up the LATEST AI model benchmarks, leaderboards, and releases. Search for terms like:
+- "best AI models ${today}"
+- "LMSYS Chatbot Arena leaderboard"  
+- "Artificial Analysis AI leaderboard"
+- "latest AI model releases 2025"
+- "best coding AI model 2025"
+- "best AI for frontend development"
+
+For each of the following task categories, recommend the single BEST currently available AI model. Do NOT default to GPT-4o or older models unless they genuinely are still the best after searching.
+
+Categories to evaluate: ${uniqueCats.join(", ")}
+
+Return ONLY a valid JSON object mapping each category to an object with "model" and "reasoning" fields.
+The "model" should be the specific model name (e.g., "Claude 4 Opus", "Gemini 2.5 Pro", "GPT-4.1", "DeepSeek V3", "Llama 4 Maverick").
+The "reasoning" should be 1 sentence referencing specific benchmarks or capabilities you found.
+
+Example format:
+{
+  "frontend": {"model": "Claude 4 Opus", "reasoning": "Tops WebDev Arena and SWE-bench for UI code generation as of June 2025."},
+  "backend": {"model": "Gemini 2.5 Pro", "reasoning": "Leads Aider polyglot benchmark with 72% score for complex backend systems."}
+}`;
+}
+
+// ─── Orchestration Engine ────────────────────────────────────────────────────
+
+async function orchestrateWithLLM(task: string): Promise<{ subtasks: Subtask[]; grounded: boolean }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("NO_API_KEY");
@@ -53,74 +84,83 @@ async function breakdownWithGroundedLLM(task: string): Promise<{ subtasks: Subta
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const response = await ai.models.generateContent({
+  // ── Phase 1: Split the task ──
+  const splitResponse = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: task,
     config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.5,
+      systemInstruction: SPLIT_PROMPT,
+      temperature: 0.4,
+      responseMimeType: "application/json",
+    },
+  });
+
+  const splitRaw = splitResponse.text;
+  if (!splitRaw) throw new Error("Task splitting returned empty response");
+
+  const splitParsed: { task: string; category: string }[] = JSON.parse(splitRaw);
+  const categories = splitParsed.map((s) => s.category);
+
+  // ── Phase 2: Search the web for best models ──
+  const modelPrompt = buildModelSearchPrompt(categories);
+
+  const modelResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: modelPrompt,
+    config: {
+      temperature: 0.3,
       tools: [{ googleSearch: {} }],
     },
   });
 
-  const raw = response.text;
-  if (!raw) {
-    throw new Error("LLM returned empty response");
-  }
+  const modelRaw = modelResponse.text;
+  if (!modelRaw) throw new Error("Model search returned empty response");
 
-  // Check if grounding was actually used
+  // Check if grounding was used
   const grounded = !!(
-    response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length
+    modelResponse.candidates?.[0]?.groundingMetadata?.groundingChunks?.length
   );
 
-  // Extract JSON from response (may be wrapped in markdown code fences)
-  let jsonStr = raw.trim();
+  // Extract JSON from response (may have markdown fences)
+  let jsonStr = modelRaw.trim();
   const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenceMatch) {
     jsonStr = fenceMatch[1].trim();
   }
 
-  const parsed: { task: string; category: string; model: string; reasoning: string }[] = JSON.parse(jsonStr);
+  let modelMap: Record<string, { model: string; reasoning: string }>;
+  try {
+    modelMap = JSON.parse(jsonStr);
+  } catch {
+    // If JSON parsing fails, use a sensible default
+    console.error("Failed to parse model recommendations:", jsonStr);
+    modelMap = {};
+  }
 
-  const subtasks: Subtask[] = parsed.map((item) => ({
-    task: item.task,
-    category: item.category || "other",
-    model: item.model || "Unknown",
-    reasoning: item.reasoning || "Selected based on current capabilities.",
-    status: "pending",
-  }));
+  // ── Combine results ──
+  const subtasks: Subtask[] = splitParsed.map((item) => {
+    const rec = modelMap[item.category];
+    return {
+      task: item.task,
+      category: item.category,
+      model: rec?.model || "Unknown",
+      reasoning: rec?.reasoning || "Could not determine the best model for this category.",
+      status: "pending",
+    };
+  });
 
   return { subtasks, grounded };
 }
 
-// ─── Keyword Fallback (No API Key) ───────────────────────────────────────────
+// ─── Fallback (No API Key) ──────────────────────────────────────────────────
 
 function breakdownWithFallback(task: string): Subtask[] {
-  const lower = task.toLowerCase();
-  const isSaas = lower.includes("saas") || lower.includes("platform");
-
-  const templates: { task: string; category: string; model: string; reasoning: string }[] = isSaas
-    ? [
-        { task: "Research market competitors and pricing strategies", category: "research", model: "Gemini-1.5", reasoning: "Strong research capabilities with Google Search integration." },
-        { task: "Design database schema and API architecture", category: "backend", model: "GPT-4o", reasoning: "Leading code generation benchmark scores." },
-        { task: "Build authentication and payment integration", category: "backend", model: "GPT-4o", reasoning: "Reliable for complex backend logic." },
-        { task: "Create the dashboard UI and landing page", category: "frontend", model: "GPT-4o", reasoning: "Strong frontend code generation." },
-        { task: "Design brand identity, logo, and marketing copy", category: "branding", model: "Claude-3.5", reasoning: "Excellent creative writing and brand work." },
-      ]
-    : [
-        { task: "Research requirements and feasibility", category: "research", model: "Gemini-1.5", reasoning: "Strong research capabilities." },
-        { task: "Design system architecture and data models", category: "backend", model: "GPT-4o", reasoning: "Leading code generation scores." },
-        { task: "Build the user-facing interface", category: "frontend", model: "GPT-4o", reasoning: "Strong frontend generation." },
-        { task: "Create branding and documentation", category: "branding", model: "Claude-3.5", reasoning: "Excellent creative output." },
-      ];
-
-  return templates.map((item) => ({
-    task: item.task,
-    category: item.category,
-    model: item.model,
-    reasoning: item.reasoning,
-    status: "pending",
-  }));
+  return [
+    { task: "Research requirements and feasibility", category: "research", model: "Unknown", reasoning: "Connect a Gemini API key to enable web-grounded model search.", status: "pending" },
+    { task: "Design system architecture", category: "backend", model: "Unknown", reasoning: "Connect a Gemini API key to enable web-grounded model search.", status: "pending" },
+    { task: "Build the user-facing interface", category: "frontend", model: "Unknown", reasoning: "Connect a Gemini API key to enable web-grounded model search.", status: "pending" },
+    { task: "Create branding and documentation", category: "branding", model: "Unknown", reasoning: "Connect a Gemini API key to enable web-grounded model search.", status: "pending" },
+  ];
 }
 
 // ─── Supabase Persistence ────────────────────────────────────────────────────
@@ -144,15 +184,12 @@ async function persistWorkflow(requestText: string, subtasks: Subtask[]) {
       order_index: index,
     }));
 
-    const { error: tasksError } = await supabaseAdmin
-      .from("tasks")
-      .insert(taskRecords);
-
+    const { error: tasksError } = await supabaseAdmin.from("tasks").insert(taskRecords);
     if (tasksError) throw tasksError;
 
     return workflow.id;
   } catch (err) {
-    console.error("Failed to persist workflow to Supabase:", err);
+    console.error("Failed to persist workflow:", err);
     return null;
   }
 }
@@ -165,29 +202,22 @@ export async function POST(req: Request) {
     const task: string = body.task;
 
     if (!task || typeof task !== "string" || task.trim().length === 0) {
-      return NextResponse.json(
-        { error: "A task description is required." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "A task description is required." }, { status: 400 });
     }
 
     let subtasks: Subtask[];
     let grounded = false;
-    let method: "llm" | "fallback";
 
     try {
-      const result = await breakdownWithGroundedLLM(task);
+      const result = await orchestrateWithLLM(task);
       subtasks = result.subtasks;
       grounded = result.grounded;
-      method = "llm";
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "";
-      if (message !== "NO_API_KEY") console.error("LLM breakdown failed:", err);
+      if (message !== "NO_API_KEY") console.error("Orchestration failed:", err);
       subtasks = breakdownWithFallback(task);
-      method = "fallback";
     }
 
-    // Persist to Supabase
     const workflowId = await persistWorkflow(task, subtasks);
 
     const response: OrchestrationResponse = {
@@ -195,17 +225,14 @@ export async function POST(req: Request) {
       workflowId: workflowId || undefined,
       split: subtasks,
       grounded,
-      synthesis: workflowId
-        ? `Loomer analyzed your request${grounded ? " using live web data" : ""}, routed ${subtasks.length} tasks to optimal models, and saved the workflow.`
-        : `Loomer routed ${subtasks.length} tasks${grounded ? " using live web data" : ""}. (Database not connected).`,
+      synthesis: grounded
+        ? `Loomer searched the web live and routed ${subtasks.length} tasks to the best current models.`
+        : `Loomer routed ${subtasks.length} tasks using AI knowledge.${workflowId ? "" : " (DB not connected)"}`,
     };
 
     return NextResponse.json(response);
   } catch (err) {
     console.error("Orchestration error:", err);
-    return NextResponse.json(
-      { error: "Failed to orchestrate task." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to orchestrate task." }, { status: 500 });
   }
 }
