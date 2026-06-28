@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import benchmarks from "@/data/benchmarks.json";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ interface OrchestrationResponse {
   synthesis: string;
 }
 
-// ─── LLM-based Dynamic Breakdown ─────────────────────────────────────────────
+// ─── LLM-based Dynamic Breakdown (Gemini) ────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are the Loom Orchestrator — an AI task decomposition engine.
 
@@ -41,23 +41,24 @@ Example output:
 ]`;
 
 async function breakdownWithLLM(task: string): Promise<Subtask[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("NO_API_KEY");
   }
 
-  const openai = new OpenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    temperature: 0.4,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: task },
-    ],
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: task,
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      temperature: 0.4,
+      responseMimeType: "application/json"
+    },
   });
 
-  const raw = completion.choices[0]?.message?.content?.trim();
+  const raw = response.text;
   if (!raw) {
     throw new Error("LLM returned empty response");
   }
@@ -177,7 +178,7 @@ export async function POST(req: Request) {
       synthesis:
         method === "llm"
           ? `Loom dynamically analyzed your request and routed ${subtasks.length} subtasks to their optimal models.`
-          : `Loom routed ${subtasks.length} subtasks using cached benchmarks. Connect an OpenAI API key for dynamic AI-powered breakdown.`,
+          : `Loom routed ${subtasks.length} subtasks using cached benchmarks. Connect a Gemini API key for dynamic AI-powered breakdown.`,
     };
 
     return NextResponse.json(response);
