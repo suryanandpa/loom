@@ -799,7 +799,7 @@ function useReveal() {
   return ref;
 }
 
-function RevealDiv({ className = "", children, delay = 0, ...props }) {
+function RevealDiv({ className = "", children, delay = 0, ...props }: { className?: string; children: React.ReactNode; delay?: number } & React.HTMLAttributes<HTMLDivElement>) {
   const ref = useReveal();
   return (
     <div
