@@ -1,758 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
-const YELLOW = "#F5C518";
-const YELLOW_DIM = "#C49A10";
-const BLACK = "#080808";
-const WHITE = "#F7F7F2";
-const GRAY = "#1A1A1A";
-
-const style = `
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --yellow: ${YELLOW};
-    --yellow-dim: ${YELLOW_DIM};
-    --black: ${BLACK};
-    --white: ${WHITE};
-    --gray: ${GRAY};
-    --font-hero: 'Bebas Neue', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'Space Mono', monospace;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--black);
-    color: var(--white);
-    font-family: var(--font-body);
-    overflow-x: hidden;
-    cursor: default;
-  }
-
-  /* NOISE OVERLAY */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.35;
-  }
-
-  /* NAV */
-  .nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    padding: 24px 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to bottom, rgba(8,8,8,0.95) 0%, rgba(8,8,8,0) 100%);
-    backdrop-filter: blur(0px);
-    transition: backdrop-filter 0.3s;
-  }
-  .nav.scrolled {
-    backdrop-filter: blur(20px);
-    background: rgba(8,8,8,0.8);
-    border-bottom: 1px solid rgba(245,197,24,0.1);
-  }
-  .nav-logo {
-    font-family: var(--font-hero);
-    font-size: 28px;
-    letter-spacing: 4px;
-    color: var(--yellow);
-    text-decoration: none;
-  }
-  .nav-links {
-    display: flex;
-    gap: 36px;
-    list-style: none;
-    align-items: center;
-  }
-  .nav-links a {
-    color: rgba(247,247,242,0.6);
-    text-decoration: none;
-    font-size: 13px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 600;
-    transition: color 0.2s;
-  }
-  .nav-links a:hover { color: var(--yellow); }
-
-  .btn-primary {
-    background: var(--yellow);
-    color: var(--black);
-    border: none;
-    padding: 12px 28px;
-    font-family: var(--font-body);
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s;
-    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-  }
-  .btn-primary:hover {
-    background: var(--white);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(245,197,24,0.3);
-  }
-
-  .btn-large {
-    padding: 18px 52px;
-    font-size: 15px;
-    letter-spacing: 3px;
-    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
-  }
-  .btn-large:hover {
-    box-shadow: 0 12px 48px rgba(245,197,24,0.4);
-  }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--yellow);
-    border: 1px solid var(--yellow);
-    padding: 14px 36px;
-    font-family: var(--font-body);
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.25s;
-  }
-  .btn-outline:hover {
-    background: var(--yellow);
-    color: var(--black);
-  }
-
-  /* HERO */
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 0 8vw;
-    overflow: hidden;
-  }
-
-  .hero-bg-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(245,197,24,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,197,24,0.04) 1px, transparent 1px);
-    background-size: 80px 80px;
-    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
-  }
-
-  .hero-glow {
-    position: absolute;
-    top: -20%;
-    right: -10%;
-    width: 70vw;
-    height: 70vw;
-    background: radial-gradient(ellipse, rgba(245,197,24,0.08) 0%, transparent 65%);
-    pointer-events: none;
-  }
-
-  .hero-glow-2 {
-    position: absolute;
-    bottom: -30%;
-    left: -10%;
-    width: 50vw;
-    height: 50vw;
-    background: radial-gradient(ellipse, rgba(245,197,24,0.05) 0%, transparent 65%);
-    pointer-events: none;
-  }
-
-  .hero-tag {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--yellow);
-    text-transform: uppercase;
-    margin-bottom: 32px;
-    opacity: 0;
-    animation: fadeUp 0.8s ease 0.2s forwards;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .hero-tag::before {
-    content: '';
-    display: block;
-    width: 32px;
-    height: 1px;
-    background: var(--yellow);
-  }
-
-  .hero-heading {
-    font-family: var(--font-hero);
-    font-size: clamp(72px, 12vw, 160px);
-    line-height: 0.92;
-    letter-spacing: 2px;
-    color: var(--white);
-    opacity: 0;
-    animation: fadeUp 0.9s ease 0.4s forwards;
-    position: relative;
-    z-index: 1;
-  }
-  .hero-heading span { color: var(--yellow); }
-
-  .hero-sub {
-    font-family: var(--font-hero);
-    font-size: clamp(28px, 4vw, 52px);
-    letter-spacing: 4px;
-    color: rgba(247,247,242,0.45);
-    margin-top: 16px;
-    opacity: 0;
-    animation: fadeUp 0.9s ease 0.6s forwards;
-  }
-
-  .hero-cta {
-    margin-top: 56px;
-    opacity: 0;
-    animation: fadeUp 0.9s ease 0.8s forwards;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .hero-scroll-hint {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    opacity: 0;
-    animation: fadeIn 1s ease 1.4s forwards;
-  }
-  .hero-scroll-hint span {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 3px;
-    color: rgba(247,247,242,0.3);
-    text-transform: uppercase;
-  }
-  .scroll-line {
-    width: 1px;
-    height: 48px;
-    background: linear-gradient(to bottom, var(--yellow), transparent);
-    animation: scrollPulse 2s ease-in-out infinite;
-  }
-
-  /* TICKER */
-  .ticker-wrap {
-    overflow: hidden;
-    border-top: 1px solid rgba(245,197,24,0.15);
-    border-bottom: 1px solid rgba(245,197,24,0.15);
-    padding: 16px 0;
-    background: rgba(245,197,24,0.03);
-  }
-  .ticker-track {
-    display: flex;
-    gap: 0;
-    animation: tickerScroll 30s linear infinite;
-    width: max-content;
-  }
-  .ticker-item {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: rgba(247,247,242,0.35);
-    padding: 0 48px;
-    white-space: nowrap;
-    border-right: 1px solid rgba(245,197,24,0.15);
-  }
-  .ticker-item.accent { color: var(--yellow); }
-
-  /* ABOUT */
-  .section-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--yellow);
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .section-label::after {
-    content: '';
-    display: block;
-    flex: 1;
-    max-width: 60px;
-    height: 1px;
-    background: var(--yellow);
-    opacity: 0.4;
-  }
-
-  .about {
-    padding: 140px 8vw;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .about-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: start;
-  }
-
-  .about-left h2 {
-    font-family: var(--font-hero);
-    font-size: clamp(44px, 5.5vw, 80px);
-    line-height: 0.95;
-    letter-spacing: 2px;
-    margin-bottom: 40px;
-  }
-  .about-left h2 em {
-    font-style: normal;
-    color: var(--yellow);
-  }
-  .about-left p {
-    font-size: 17px;
-    line-height: 1.75;
-    color: rgba(247,247,242,0.65);
-    font-weight: 300;
-    max-width: 480px;
-  }
-
-  .about-right {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    margin-top: 8px;
-  }
-
-  .about-card {
-    background: var(--gray);
-    border-left: 2px solid transparent;
-    padding: 28px 32px;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-  }
-  .about-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(245,197,24,0.0);
-    transition: background 0.3s;
-  }
-  .about-card:hover {
-    border-left-color: var(--yellow);
-    background: rgba(245,197,24,0.04);
-  }
-  .about-card:hover::before {
-    background: rgba(245,197,24,0.02);
-  }
-
-  .card-num {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: rgba(245,197,24,0.5);
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-  }
-  .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--white);
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-  }
-  .card-body {
-    font-size: 14px;
-    color: rgba(247,247,242,0.5);
-    line-height: 1.65;
-    font-weight: 300;
-  }
-
-  .chaos-block {
-    margin-top: 80px;
-    border: 1px solid rgba(245,197,24,0.12);
-    padding: 52px 56px;
-    position: relative;
-    background: linear-gradient(135deg, rgba(245,197,24,0.03) 0%, transparent 60%);
-  }
-  .chaos-block::before {
-    content: '"';
-    position: absolute;
-    top: -24px;
-    left: 40px;
-    font-family: var(--font-hero);
-    font-size: 120px;
-    color: var(--yellow);
-    opacity: 0.15;
-    line-height: 1;
-  }
-  .chaos-block p {
-    font-family: var(--font-hero);
-    font-size: clamp(20px, 2.5vw, 32px);
-    line-height: 1.25;
-    letter-spacing: 1px;
-    color: var(--white);
-  }
-  .chaos-block p em {
-    font-style: normal;
-    color: var(--yellow);
-  }
-
-  /* CTA SECTION */
-  .cta-section {
-    padding: 120px 8vw;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(180deg, var(--black) 0%, rgba(245,197,24,0.04) 50%, var(--black) 100%);
-  }
-
-  .cta-section .bg-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    border: 1px solid rgba(245,197,24,0.07);
-    pointer-events: none;
-  }
-  .cta-section .bg-ring:nth-child(2) {
-    width: 900px;
-    height: 900px;
-    border-color: rgba(245,197,24,0.04);
-  }
-  .cta-section .bg-ring:nth-child(3) {
-    width: 1200px;
-    height: 1200px;
-    border-color: rgba(245,197,24,0.025);
-  }
-
-  .cta-section h2 {
-    font-family: var(--font-hero);
-    font-size: clamp(52px, 7vw, 100px);
-    letter-spacing: 3px;
-    line-height: 0.95;
-    position: relative;
-    z-index: 1;
-    margin-bottom: 24px;
-  }
-  .cta-section h2 span { color: var(--yellow); }
-  .cta-section p {
-    font-size: 17px;
-    color: rgba(247,247,242,0.5);
-    max-width: 480px;
-    line-height: 1.7;
-    margin-bottom: 48px;
-    font-weight: 300;
-    position: relative;
-    z-index: 1;
-  }
-  .cta-section .cta-btns {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* STATS BAR */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid rgba(245,197,24,0.1);
-    border-bottom: 1px solid rgba(245,197,24,0.1);
-  }
-  .stat-item {
-    padding: 52px 8vw;
-    border-right: 1px solid rgba(245,197,24,0.1);
-    text-align: center;
-  }
-  .stat-item:last-child { border-right: none; }
-  .stat-num {
-    font-family: var(--font-hero);
-    font-size: clamp(48px, 6vw, 80px);
-    letter-spacing: 2px;
-    color: var(--yellow);
-    display: block;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-  .stat-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: rgba(247,247,242,0.4);
-  }
-
-  /* MEET THE DEV */
-  .dev-section {
-    padding: 140px 8vw 100px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .dev-section::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--yellow), transparent);
-    opacity: 0.2;
-  }
-
-  .dev-inner {
-    display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 80px;
-    align-items: start;
-  }
-
-  .dev-card {
-    background: var(--gray);
-    border: 1px solid rgba(245,197,24,0.1);
-    padding: 48px 40px;
-    position: relative;
-    overflow: hidden;
-  }
-  .dev-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 120px;
-    height: 120px;
-    background: radial-gradient(circle, rgba(245,197,24,0.08) 0%, transparent 70%);
-  }
-
-  .dev-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--yellow), var(--yellow-dim));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-hero);
-    font-size: 32px;
-    color: var(--black);
-    margin-bottom: 24px;
-    position: relative;
-  }
-  .dev-avatar::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    border-radius: 50%;
-    border: 1px solid rgba(245,197,24,0.3);
-  }
-
-  .dev-name {
-    font-family: var(--font-hero);
-    font-size: 36px;
-    letter-spacing: 2px;
-    margin-bottom: 4px;
-    color: var(--white);
-  }
-  .dev-role {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--yellow);
-    margin-bottom: 28px;
-  }
-  .dev-divider {
-    height: 1px;
-    background: rgba(245,197,24,0.12);
-    margin-bottom: 28px;
-  }
-
-  .social-links {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .social-link {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 12px 0;
-    text-decoration: none;
-    color: rgba(247,247,242,0.55);
-    font-size: 13px;
-    letter-spacing: 1px;
-    font-weight: 500;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    transition: all 0.2s;
-    group: true;
-  }
-  .social-link:last-child { border-bottom: none; }
-  .social-link:hover { color: var(--yellow); }
-  .social-link:hover .social-icon { background: var(--yellow); color: var(--black); }
-
-  .social-icon {
-    width: 32px;
-    height: 32px;
-    border: 1px solid rgba(245,197,24,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-
-  .dev-right h2 {
-    font-family: var(--font-hero);
-    font-size: clamp(40px, 5vw, 64px);
-    line-height: 1;
-    letter-spacing: 2px;
-    margin-bottom: 32px;
-  }
-  .dev-right h2 span { color: var(--yellow); }
-  .dev-right p {
-    font-size: 16px;
-    line-height: 1.8;
-    color: rgba(247,247,242,0.6);
-    font-weight: 300;
-    max-width: 520px;
-    margin-bottom: 20px;
-  }
-
-  .dev-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 40px;
-  }
-  .dev-tag {
-    padding: 8px 16px;
-    border: 1px solid rgba(245,197,24,0.2);
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(247,247,242,0.5);
-    transition: all 0.2s;
-    cursor: default;
-  }
-  .dev-tag:hover { border-color: var(--yellow); color: var(--yellow); }
-
-  /* FOOTER */
-  .footer {
-    border-top: 1px solid rgba(245,197,24,0.1);
-    padding: 48px 8vw;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .footer-logo {
-    font-family: var(--font-hero);
-    font-size: 24px;
-    letter-spacing: 4px;
-    color: var(--yellow);
-  }
-  .footer-copy {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: rgba(247,247,242,0.25);
-  }
-  .footer-links {
-    display: flex;
-    gap: 32px;
-  }
-  .footer-links a {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: rgba(247,247,242,0.3);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .footer-links a:hover { color: var(--yellow); }
-
-  /* ANIMATIONS */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(32px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes scrollPulse {
-    0%, 100% { opacity: 0.3; transform: scaleY(1); }
-    50% { opacity: 1; transform: scaleY(1.1); }
-  }
-  @keyframes tickerScroll {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  .reveal {
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-  }
-  .reveal.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* MOBILE */
-  @media (max-width: 900px) {
-    .nav { padding: 20px 24px; }
-    .nav-links { display: none; }
-    .hero { padding: 0 6vw; }
-    .about { padding: 80px 6vw; }
-    .about-grid { grid-template-columns: 1fr; gap: 48px; }
-    .stats-bar { grid-template-columns: 1fr; }
-    .stat-item { border-right: none; border-bottom: 1px solid rgba(245,197,24,0.1); }
-    .cta-section { padding: 80px 6vw; }
-    .dev-section { padding: 80px 6vw; }
-    .dev-inner { grid-template-columns: 1fr; }
-    .footer { flex-direction: column; gap: 24px; text-align: center; }
-    .footer-links { flex-wrap: wrap; justify-content: center; }
-    .chaos-block { padding: 36px 32px; }
-  }
-`;
+/* ═══════════════════════════════════════════════════════════════
+   Data
+   ═══════════════════════════════════════════════════════════════ */
 
 const TICKER_ITEMS = [
-  { text: "Multi-Model Orchestration", accent: false },
-  { text: "Dynamic Task Routing", accent: true },
-  { text: "Benchmark-Aware Selection", accent: false },
-  { text: "Workflow Continuity", accent: true },
-  { text: "Shared Project Memory", accent: false },
-  { text: "Unified AI Workspace", accent: true },
-  { text: "Zero Context Loss", accent: false },
-  { text: "Intelligence Layering", accent: true },
+  "Multi-Model Orchestration",
+  "Dynamic Task Routing",
+  "Benchmark-Aware Selection",
+  "Workflow Continuity",
+  "Shared Project Memory",
+  "Unified AI Workspace",
+  "Zero Context Loss",
+  "Intelligence Layering",
 ];
 
 const FEATURES = [
@@ -778,262 +41,941 @@ const FEATURES = [
   },
 ];
 
-const SOCIALS = [
-  { icon: "in", label: "LinkedIn", handle: "linkedin.com/in/suryanandpa", href: "https://www.linkedin.com/in/suryanandpa" },
-  { icon: "𝕏", label: "Twitter / X", handle: "@suryanandpa", href: "https://x.com/suryanandpa" },
-  { icon: "gh", label: "GitHub", handle: "@suryanandpa", href: "https://github.com/suryanandpa" },
-  { icon: "✉", label: "Email", handle: "hello.suryanand@gmail.com", href: "mailto:hello.suryanand@gmail.com" },
+const STEPS = [
+  {
+    num: "01",
+    title: "DESCRIBE",
+    body: "Tell Loom what you want to build. One prompt. That's it.",
+  },
+  {
+    num: "02",
+    title: "DECOMPOSE",
+    body: "Loomer breaks your goal into structured, sequential subtasks.",
+  },
+  {
+    num: "03",
+    title: "ROUTE",
+    body: "Each subtask is assigned to the best AI model based on live benchmarks.",
+  },
+  {
+    num: "04",
+    title: "EXECUTE",
+    body: "Models run in parallel. Results synthesize into one unified output.",
+  },
 ];
 
+const SOCIALS = [
+  {
+    icon: "in",
+    label: "LinkedIn",
+    handle: "linkedin.com/in/suryanandpa",
+    href: "https://www.linkedin.com/in/suryanandpa",
+  },
+  {
+    icon: "𝕏",
+    label: "Twitter / X",
+    handle: "@suryanandpa",
+    href: "https://x.com/suryanandpa",
+  },
+  {
+    icon: "gh",
+    label: "GitHub",
+    handle: "@suryanandpa",
+    href: "https://github.com/suryanandpa",
+  },
+  {
+    icon: "✉",
+    label: "Email",
+    handle: "hello.suryanand@gmail.com",
+    href: "mailto:hello.suryanand@gmail.com",
+  },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   Hooks
+   ═══════════════════════════════════════════════════════════════ */
+
 function useReveal() {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!ref.current) return;
+    const el = ref.current;
+    if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } },
-      { threshold: 0.12 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("visible");
+          obs.unobserve(el);
+        }
+      },
+      { threshold: 0.1 }
     );
-    obs.observe(ref.current);
+    obs.observe(el);
     return () => obs.disconnect();
   }, []);
   return ref;
 }
 
-function RevealDiv({ className = "", children, delay = 0, ...props }: { className?: string; children: React.ReactNode; delay?: number } & React.HTMLAttributes<HTMLDivElement>) {
+/* ═══════════════════════════════════════════════════════════════
+   Sub-components
+   ═══════════════════════════════════════════════════════════════ */
+
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   const ref = useReveal();
   return (
     <div
       ref={ref}
       className={`reveal ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
-      {...props}
     >
       {children}
     </div>
   );
 }
 
-export default function LoomLanding() {
+/* ═══════════════════════════════════════════════════════════════
+   Main Component
+   ═══════════════════════════════════════════════════════════════ */
+
+export default function LoomHero() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const tickerDouble = [...TICKER_ITEMS, ...TICKER_ITEMS];
 
   return (
-    <>
-      <style>{style}</style>
+    <div className="min-h-screen bg-[#030303] text-[#F7F7F2] overflow-x-hidden">
+      {/* Film grain */}
+      <div className="noise-overlay" />
 
-      {/* NAV */}
-      <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-        <a className="nav-logo" href="#">LOOM</a>
-        <ul className="nav-links">
-          <li><a href="#about">About</a></li>
-          <li><a href="#dev">The Dev</a></li>
-          <li>
-            <button className="btn-primary" onClick={() => {}}>Try Loom</button>
-          </li>
-        </ul>
-      </nav>
+      {/* ═══════════════════════════════════════════════════════
+          NAVIGATION
+          ═══════════════════════════════════════════════════════ */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-20 flex items-center justify-between transition-all duration-500 ${
+          scrolled
+            ? "bg-[#030303]/80 backdrop-blur-2xl border-b border-white/[0.06]"
+            : ""
+        }`}
+      >
+        <Link
+          href="/"
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[6px] text-[#F5C518] hover:text-white transition-colors"
+        >
+          LOOM
+        </Link>
 
-      {/* ── HERO ── */}
-      <section className="hero">
-        <div className="hero-bg-grid" />
-        <div className="hero-glow" />
-        <div className="hero-glow-2" />
-
-        <div className="hero-tag">AI Orchestration Platform</div>
-
-        <h1 className="hero-heading">
-          Next Step<br />
-          in <span>Auto</span>-<br />
-          <span>mation</span>
-        </h1>
-
-        <p className="hero-sub">Do Almost nothing manually</p>
-
-        <div className="hero-cta">
-          <button className="btn-primary btn-large">Try Loom</button>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, letterSpacing: 2, color: "rgba(247,247,242,0.3)", textTransform: "uppercase" }}>
-            Free Early Access
-          </span>
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-10">
+          <a
+            href="#about"
+            className="text-xs font-[family-name:var(--font-mono)] tracking-[3px] uppercase text-white/40 hover:text-[#F5C518] transition-colors"
+          >
+            About
+          </a>
+          <a
+            href="#how"
+            className="text-xs font-[family-name:var(--font-mono)] tracking-[3px] uppercase text-white/40 hover:text-[#F5C518] transition-colors"
+          >
+            How It Works
+          </a>
+          <a
+            href="#dev"
+            className="text-xs font-[family-name:var(--font-mono)] tracking-[3px] uppercase text-white/40 hover:text-[#F5C518] transition-colors"
+          >
+            Creator
+          </a>
+          <Link
+            href="/dashboard"
+            className="bg-[#F5C518] text-black px-6 py-2.5 text-xs font-[family-name:var(--font-body)] font-bold tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(245,197,24,0.3)]"
+            style={{
+              clipPath:
+                "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))",
+            }}
+          >
+            Launch Loomer
+          </Link>
         </div>
 
-        <div className="hero-scroll-hint">
-          <div className="scroll-line" />
-          <span>Scroll</span>
+        {/* Mobile hamburger */}
+        <button
+          className="md:hidden flex flex-col gap-1.5 p-2"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span
+            className={`block w-6 h-[2px] bg-[#F5C518] transition-transform duration-300 ${
+              mobileMenuOpen ? "rotate-45 translate-y-[5px]" : ""
+            }`}
+          />
+          <span
+            className={`block w-6 h-[2px] bg-[#F5C518] transition-opacity duration-300 ${
+              mobileMenuOpen ? "opacity-0" : ""
+            }`}
+          />
+          <span
+            className={`block w-6 h-[2px] bg-[#F5C518] transition-transform duration-300 ${
+              mobileMenuOpen ? "-rotate-45 -translate-y-[5px]" : ""
+            }`}
+          />
+        </button>
+      </nav>
+
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-[#030303]/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 md:hidden">
+          <a
+            href="#about"
+            onClick={() => setMobileMenuOpen(false)}
+            className="font-[family-name:var(--font-display)] text-3xl tracking-[6px] text-white/60 hover:text-[#F5C518] transition-colors"
+          >
+            About
+          </a>
+          <a
+            href="#how"
+            onClick={() => setMobileMenuOpen(false)}
+            className="font-[family-name:var(--font-display)] text-3xl tracking-[6px] text-white/60 hover:text-[#F5C518] transition-colors"
+          >
+            How It Works
+          </a>
+          <a
+            href="#dev"
+            onClick={() => setMobileMenuOpen(false)}
+            className="font-[family-name:var(--font-display)] text-3xl tracking-[6px] text-white/60 hover:text-[#F5C518] transition-colors"
+          >
+            Creator
+          </a>
+          <Link
+            href="/dashboard"
+            className="mt-4 bg-[#F5C518] text-black px-10 py-4 font-[family-name:var(--font-body)] font-bold tracking-[3px] uppercase text-sm"
+          >
+            Launch Loomer
+          </Link>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          HERO
+          ═══════════════════════════════════════════════════════ */}
+      <section className="relative min-h-screen flex flex-col justify-center items-center px-6 overflow-hidden">
+        {/* ── Background Effects ── */}
+
+        {/* Dot grid */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(245,197,24,0.04) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            maskImage:
+              "radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 80% 70% at 50% 50%, black 20%, transparent 100%)",
+          }}
+        />
+
+        {/* Aurora glows */}
+        <div
+          className="absolute top-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(245,197,24,0.12) 0%, transparent 60%)",
+            animation: "float 15s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute bottom-[-15%] left-[-5%] w-[40vw] h-[40vw] rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(245,197,24,0.08) 0%, transparent 60%)",
+            animation: "float 18s ease-in-out infinite 3s",
+          }}
+        />
+        <div
+          className="absolute top-[30%] left-[40%] w-[25vw] h-[25vw] rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(200,160,20,0.06) 0%, transparent 50%)",
+            animation: "float-reverse 12s ease-in-out infinite 6s",
+          }}
+        />
+
+        {/* Floating particles */}
+        <div
+          className="absolute top-[18%] right-[18%] w-2.5 h-2.5 rounded-full bg-[#F5C518]/40"
+          style={{
+            boxShadow: "0 0 20px rgba(245,197,24,0.3)",
+            animation: "float 8s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute top-[62%] left-[12%] w-2 h-2 rounded-full bg-[#F5C518]/30"
+          style={{
+            boxShadow: "0 0 15px rgba(245,197,24,0.2)",
+            animation: "float-reverse 10s ease-in-out infinite 2s",
+          }}
+        />
+        <div
+          className="absolute top-[38%] left-[22%] w-1.5 h-1.5 rounded-full bg-[#F5C518]/20"
+          style={{
+            boxShadow: "0 0 10px rgba(245,197,24,0.15)",
+            animation: "float 12s ease-in-out infinite 4s",
+          }}
+        />
+        <div
+          className="absolute bottom-[28%] right-[25%] w-2 h-2 rounded-full bg-[#F5C518]/25"
+          style={{
+            boxShadow: "0 0 18px rgba(245,197,24,0.2)",
+            animation: "float-reverse 9s ease-in-out infinite 1s",
+          }}
+        />
+        <div
+          className="absolute top-[75%] right-[8%] w-1 h-1 rounded-full bg-[#F5C518]/35"
+          style={{
+            boxShadow: "0 0 8px rgba(245,197,24,0.2)",
+            animation: "float 14s ease-in-out infinite 5s",
+          }}
+        />
+
+        {/* Scan line */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div
+            className="w-full h-px absolute"
+            style={{
+              background:
+                "linear-gradient(to right, transparent, rgba(245,197,24,0.07), transparent)",
+              animation: "scan 8s linear infinite",
+            }}
+          />
+        </div>
+
+        {/* ── Hero Content ── */}
+        <div className="relative z-10 text-center max-w-5xl">
+          {/* Tag */}
+          <div
+            className="flex items-center justify-center gap-3 mb-8 opacity-0"
+            style={{ animation: "fade-up 0.8s ease 0.2s forwards" }}
+          >
+            <div className="w-8 h-px bg-[#F5C518]/60" />
+            <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[5px] uppercase text-[#F5C518]">
+              AI Orchestration Platform
+            </span>
+            <div className="w-8 h-px bg-[#F5C518]/60" />
+          </div>
+
+          {/* LOOM — Massive with shimmer */}
+          <div className="relative">
+            {/* Glow layer behind */}
+            <h1
+              className="absolute inset-0 font-[family-name:var(--font-display)] leading-[0.85] tracking-[0.08em] text-[#F5C518] blur-[80px] opacity-25 select-none pointer-events-none"
+              style={{ fontSize: "clamp(100px, 22vw, 300px)" }}
+              aria-hidden="true"
+            >
+              LOOM
+            </h1>
+
+            {/* Actual text with animated gradient */}
+            <h1
+              className="relative font-[family-name:var(--font-display)] leading-[0.85] tracking-[0.08em] opacity-0"
+              style={{
+                fontSize: "clamp(100px, 22vw, 300px)",
+                background:
+                  "linear-gradient(135deg, #F5C518 0%, #FFE566 25%, #F5C518 50%, #C49A10 75%, #F5C518 100%)",
+                backgroundSize: "200% 200%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                animation:
+                  "fade-up 1s ease 0.4s forwards, gradient-shift 5s ease infinite 1.4s",
+              }}
+            >
+              LOOM
+            </h1>
+          </div>
+
+          {/* Subtitle */}
+          <p
+            className="font-[family-name:var(--font-display)] tracking-[0.2em] text-white/35 mt-4 opacity-0"
+            style={{
+              fontSize: "clamp(18px, 3vw, 42px)",
+              animation: "fade-up 0.9s ease 0.7s forwards",
+            }}
+          >
+            THE AI ORCHESTRATION LAYER
+          </p>
+
+          {/* Description */}
+          <p
+            className="font-[family-name:var(--font-body)] text-white/30 mt-6 max-w-xl mx-auto text-base leading-relaxed font-light opacity-0"
+            style={{ animation: "fade-up 0.8s ease 0.9s forwards" }}
+          >
+            One prompt becomes a complete workflow. Loom routes every task to
+            the best AI model — automatically.
+          </p>
+
+          {/* CTA */}
+          <div
+            className="flex items-center justify-center gap-6 mt-12 flex-wrap opacity-0"
+            style={{ animation: "fade-up 0.8s ease 1.1s forwards" }}
+          >
+            <Link
+              href="/dashboard"
+              className="bg-[#F5C518] text-black px-10 py-4 font-[family-name:var(--font-body)] font-bold text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(245,197,24,0.35)]"
+              style={{
+                clipPath:
+                  "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
+              }}
+            >
+              Launch Loomer
+            </Link>
+            <a
+              href="#about"
+              className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-white/25 hover:text-[#F5C518] transition-colors"
+            >
+              Learn More ↓
+            </a>
+          </div>
+        </div>
+
+        {/* Scroll hint */}
+        <div
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-0"
+          style={{ animation: "fade-in 1s ease 1.6s forwards" }}
+        >
+          <div
+            className="w-px h-12"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(245,197,24,0.5), transparent)",
+              animation: "pulse-glow 2s ease-in-out infinite",
+            }}
+          />
+          <span className="font-[family-name:var(--font-mono)] text-[10px] tracking-[4px] uppercase text-white/20">
+            Scroll
+          </span>
         </div>
       </section>
 
-      {/* TICKER */}
-      <div className="ticker-wrap">
-        <div className="ticker-track">
+      {/* ═══════════════════════════════════════════════════════
+          TICKER
+          ═══════════════════════════════════════════════════════ */}
+      <div className="border-y border-[#F5C518]/10 py-4 bg-[#F5C518]/[0.02] overflow-hidden">
+        <div
+          className="flex w-max"
+          style={{ animation: "ticker-scroll 35s linear infinite" }}
+        >
           {tickerDouble.map((item, i) => (
-            <span key={i} className={`ticker-item ${item.accent ? "accent" : ""}`}>
-              {item.text}
+            <span
+              key={i}
+              className={`font-[family-name:var(--font-mono)] text-[11px] tracking-[3px] uppercase px-10 whitespace-nowrap border-r border-[#F5C518]/10 ${
+                i % 2 === 1 ? "text-[#F5C518]" : "text-white/25"
+              }`}
+            >
+              {item}
             </span>
           ))}
         </div>
       </div>
 
-      {/* ── ABOUT ── */}
-      <section className="about" id="about">
-        <div className="about-grid">
-          <div className="about-left">
-            <RevealDiv>
-              <div className="section-label">What is Loom</div>
-              <h2>
-                One layer.<br />
-                <em>All</em> the<br />
+      {/* ═══════════════════════════════════════════════════════
+          ABOUT / PROBLEM
+          ═══════════════════════════════════════════════════════ */}
+      <section id="about" className="py-28 md:py-40 px-6 md:px-16 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-16 md:gap-20 items-start">
+            {/* Left column */}
+            <Reveal>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[4px] uppercase text-[#F5C518]">
+                  What is Loom
+                </span>
+                <div className="flex-1 max-w-[60px] h-px bg-[#F5C518]/30" />
+              </div>
+              <h2 className="font-[family-name:var(--font-display)] text-[clamp(48px,6vw,90px)] leading-[0.92] tracking-[2px] mb-8">
+                One layer.
+                <br />
+                <span className="text-[#F5C518]">All</span> the
+                <br />
                 intelligence.
               </h2>
-              <p>
-                Loom is an adaptive AI orchestration platform that intelligently routes tasks across different models, agents, and tools — preserving one continuous, unified workflow from start to finish.
+              <p className="text-[17px] leading-[1.8] text-white/50 font-light max-w-md">
+                Loom is an adaptive AI orchestration platform that intelligently
+                routes tasks across different models, agents, and tools —
+                preserving one continuous, unified workflow from start to finish.
               </p>
-            </RevealDiv>
+            </Reveal>
+
+            {/* Right — Feature cards */}
+            <div className="flex flex-col gap-px mt-2">
+              {FEATURES.map((f, i) => (
+                <Reveal key={f.num} delay={i * 80}>
+                  <div className="bg-[#111] border-l-2 border-transparent px-8 py-7 hover:border-l-[#F5C518] hover:bg-[#F5C518]/[0.03] transition-all duration-300 group cursor-default">
+                    <div className="font-[family-name:var(--font-mono)] text-[11px] text-[#F5C518]/40 tracking-[2px] mb-2">
+                      {f.num}
+                    </div>
+                    <div className="text-base font-semibold mb-2 tracking-[0.5px] group-hover:text-[#F5C518] transition-colors">
+                      {f.title}
+                    </div>
+                    <div className="text-sm text-white/40 leading-[1.7] font-light">
+                      {f.body}
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
           </div>
-          <div className="about-right">
-            {FEATURES.map((f, i) => (
-              <RevealDiv key={f.num} delay={i * 80}>
-                <div className="about-card">
-                  <div className="card-num">{f.num}</div>
-                  <div className="card-title">{f.title}</div>
-                  <div className="card-body">{f.body}</div>
+
+          {/* Quote block */}
+          <Reveal delay={100}>
+            <div
+              className="mt-20 md:mt-28 border border-[#F5C518]/10 p-10 md:p-16 relative"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(245,197,24,0.03) 0%, transparent 60%)",
+              }}
+            >
+              <div
+                className="absolute top-[-20px] left-10 font-[family-name:var(--font-display)] text-[120px] text-[#F5C518]/10 leading-none select-none pointer-events-none"
+                aria-hidden="true"
+              >
+                &ldquo;
+              </div>
+              <p className="font-[family-name:var(--font-display)] text-[clamp(20px,2.5vw,34px)] leading-[1.3] tracking-[1px] relative z-10">
+                The AI race is <span className="text-[#F5C518]">chaotic</span>.
+                New models every week. Tools that don&rsquo;t talk to each
+                other. Context that evaporates every time you switch tabs.
+                <br />
+                <br />
+                Loom ends that. One workspace. One memory.{" "}
+                <span className="text-[#F5C518]">
+                  Every model working together.
+                </span>
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          HOW IT WORKS
+          ═══════════════════════════════════════════════════════ */}
+      <section
+        id="how"
+        className="py-28 md:py-40 px-6 md:px-16 relative overflow-hidden"
+      >
+        {/* Ambient glow */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full pointer-events-none opacity-20"
+          style={{
+            background:
+              "radial-gradient(ellipse, rgba(245,197,24,0.15) 0%, transparent 60%)",
+          }}
+        />
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <Reveal>
+            <div className="text-center mb-20">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="w-8 h-px bg-[#F5C518]/30" />
+                <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[4px] uppercase text-[#F5C518]">
+                  How Loom Works
+                </span>
+                <div className="w-8 h-px bg-[#F5C518]/30" />
+              </div>
+              <h2 className="font-[family-name:var(--font-display)] text-[clamp(44px,6vw,80px)] leading-[0.95] tracking-[2px]">
+                From <span className="text-[#F5C518]">one prompt</span>
+                <br />
+                to a complete workflow.
+              </h2>
+            </div>
+          </Reveal>
+
+          {/* Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-6 relative">
+            {/* Animated connector (desktop) */}
+            <div
+              className="hidden md:block absolute top-[50px] left-[12%] right-[12%] h-px z-0"
+              style={{
+                background:
+                  "repeating-linear-gradient(to right, rgba(245,197,24,0.25) 0px, rgba(245,197,24,0.25) 6px, transparent 6px, transparent 14px)",
+                animation: "dash-flow 1.5s linear infinite",
+              }}
+            />
+
+            {STEPS.map((step, i) => (
+              <Reveal key={step.num} delay={i * 120}>
+                <div className="relative z-10 text-center group">
+                  {/* Number circle */}
+                  <div className="w-[100px] h-[100px] mx-auto mb-6 rounded-full border border-[#F5C518]/20 flex items-center justify-center bg-[#0A0A0A] group-hover:border-[#F5C518]/50 group-hover:shadow-[0_0_40px_rgba(245,197,24,0.12)] transition-all duration-500 relative">
+                    {/* Rotating ring on hover */}
+                    <div className="absolute inset-[-4px] rounded-full border border-dashed border-[#F5C518]/0 group-hover:border-[#F5C518]/15 transition-all duration-500 group-hover:animate-[spin_12s_linear_infinite]" />
+                    <span className="font-[family-name:var(--font-display)] text-3xl text-[#F5C518] tracking-[2px]">
+                      {step.num}
+                    </span>
+                  </div>
+                  <h3 className="font-[family-name:var(--font-display)] text-xl tracking-[4px] mb-3 group-hover:text-[#F5C518] transition-colors">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-white/35 font-light leading-relaxed max-w-[220px] mx-auto">
+                    {step.body}
+                  </p>
                 </div>
-              </RevealDiv>
+              </Reveal>
             ))}
           </div>
         </div>
-
-        <RevealDiv delay={100}>
-          <div className="chaos-block" style={{ marginTop: 100 }}>
-            <p>
-              The AI race is <em>chaotic</em>. New models every week.
-              Tools that don't talk to each other.
-              Context that evaporates every time you switch tabs.
-              <br /><br />
-              Loom ends that. One workspace. One memory.{" "}
-              <em>Every model working together.</em>
-            </p>
-          </div>
-        </RevealDiv>
       </section>
 
-      {/* STATS */}
-      <div className="stats-bar">
+      {/* ═══════════════════════════════════════════════════════
+          ORCHESTRATION PREVIEW
+          ═══════════════════════════════════════════════════════ */}
+      <section className="py-20 px-6 md:px-16 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto">
+          <Reveal>
+            <div className="text-center mb-10">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[4px] uppercase text-[#F5C518]">
+                Live Preview
+              </span>
+              <h2 className="font-[family-name:var(--font-display)] text-[clamp(32px,4vw,52px)] tracking-[2px] mt-3">
+                See Loomer <span className="text-[#F5C518]">in action</span>.
+              </h2>
+            </div>
+          </Reveal>
+
+          <Reveal delay={150}>
+            <div className="bg-[#0A0A0A] border border-white/[0.06] rounded-2xl p-6 md:p-10 relative overflow-hidden">
+              {/* Top accent */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#F5C518]/20 to-transparent" />
+
+              {/* Origin prompt */}
+              <div className="text-center mb-5">
+                <div className="inline-block bg-[#111] border border-white/10 px-6 py-3 rounded-xl">
+                  <div className="font-[family-name:var(--font-mono)] text-[10px] text-[#F5C518] tracking-[3px] uppercase mb-1">
+                    Prompt
+                  </div>
+                  <p className="text-white/50 text-sm font-light">
+                    &ldquo;Create an AI-powered analytics dashboard&rdquo;
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-center mb-5">
+                <div className="w-px h-6 bg-gradient-to-b from-white/15 to-transparent" />
+              </div>
+
+              {/* Mini task cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    cat: "Research",
+                    model: "Gemini 2.5 Pro",
+                    color: "text-blue-400",
+                    border: "border-blue-500/15",
+                  },
+                  {
+                    cat: "Backend",
+                    model: "Claude Opus 4",
+                    color: "text-fuchsia-400",
+                    border: "border-fuchsia-500/15",
+                  },
+                  {
+                    cat: "Frontend",
+                    model: "GPT-4.1",
+                    color: "text-emerald-400",
+                    border: "border-emerald-500/15",
+                  },
+                ].map((item, i) => (
+                  <div
+                    key={item.cat}
+                    className={`bg-[#111] border ${item.border} p-4 rounded-xl text-center opacity-0`}
+                    style={{
+                      animation: `fade-up 0.5s ease ${0.3 + i * 0.25}s forwards`,
+                    }}
+                  >
+                    <div
+                      className={`font-[family-name:var(--font-mono)] text-[10px] tracking-[2px] uppercase ${item.color} mb-2`}
+                    >
+                      {item.cat}
+                    </div>
+                    <div className="text-xs text-white/30 font-[family-name:var(--font-mono)]">
+                      {item.model}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Synthesis */}
+              <div
+                className="text-center mt-6 opacity-0"
+                style={{ animation: "fade-up 0.5s ease 1.1s forwards" }}
+              >
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#F5C518]/10 border border-[#F5C518]/15 text-[#F5C518] font-[family-name:var(--font-mono)] text-xs">
+                  ✓ 3 tasks routed to optimal models
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          STATS
+          ═══════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 border-y border-[#F5C518]/10">
         {[
           { num: "10+", label: "Models Supported" },
           { num: "∞", label: "Workflow Continuity" },
           { num: "1", label: "Unified Workspace" },
-        ].map((s) => (
-          <RevealDiv key={s.label}>
-            <div className="stat-item">
-              <span className="stat-num">{s.num}</span>
-              <span className="stat-label">{s.label}</span>
+        ].map((s, i) => (
+          <Reveal key={s.label}>
+            <div
+              className={`py-14 text-center ${
+                i < 2
+                  ? "border-b md:border-b-0 md:border-r border-[#F5C518]/10"
+                  : ""
+              }`}
+            >
+              <span className="block font-[family-name:var(--font-display)] text-[clamp(52px,7vw,90px)] tracking-[2px] text-[#F5C518] leading-none mb-2">
+                {s.num}
+              </span>
+              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[3px] uppercase text-white/30">
+                {s.label}
+              </span>
             </div>
-          </RevealDiv>
+          </Reveal>
         ))}
       </div>
 
-      {/* ── CTA SECTION ── */}
-      <section className="cta-section">
-        <div className="bg-ring" />
-        <div className="bg-ring" />
-        <div className="bg-ring" />
+      {/* ═══════════════════════════════════════════════════════
+          CTA
+          ═══════════════════════════════════════════════════════ */}
+      <section
+        className="py-28 md:py-40 px-6 text-center relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(180deg, #030303 0%, rgba(245,197,24,0.03) 50%, #030303 100%)",
+        }}
+      >
+        {/* Decorative rings */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-[#F5C518]/[0.05] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-[#F5C518]/[0.03] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] rounded-full border border-[#F5C518]/[0.02] pointer-events-none" />
 
-        <RevealDiv>
-          <div className="section-label" style={{ justifyContent: "center" }}>Early Access</div>
-          <h2>
-            Stop<br />
-            <span>Switching.</span><br />
-            Start Doing.
-          </h2>
-          <p>
-            Join the waitlist and be first to experience a unified AI workspace that actually thinks ahead.
-          </p>
-          <div className="cta-btns">
-            <button className="btn-primary btn-large">Try Loom</button>
-            <button className="btn-outline">Learn More</button>
+        <Reveal>
+          <div className="relative z-10">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="w-8 h-px bg-[#F5C518]/30" />
+              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[4px] uppercase text-[#F5C518]">
+                Early Access
+              </span>
+              <div className="w-8 h-px bg-[#F5C518]/30" />
+            </div>
+            <h2 className="font-[family-name:var(--font-display)] text-[clamp(56px,8vw,110px)] leading-[0.92] tracking-[3px] mb-6">
+              Stop
+              <br />
+              <span className="text-[#F5C518]">Switching.</span>
+              <br />
+              Start Building.
+            </h2>
+            <p className="text-[17px] text-white/35 max-w-md mx-auto leading-[1.75] font-light mb-12">
+              Join the waitlist and be first to experience a unified AI
+              workspace that actually thinks ahead.
+            </p>
+            <div className="flex items-center justify-center gap-4 flex-wrap">
+              <Link
+                href="/dashboard"
+                className="bg-[#F5C518] text-black px-12 py-5 font-[family-name:var(--font-body)] font-bold text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_48px_rgba(245,197,24,0.4)]"
+                style={{
+                  clipPath:
+                    "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))",
+                }}
+              >
+                Try Loom
+              </Link>
+              <button className="border border-[#F5C518] text-[#F5C518] px-8 py-4 font-[family-name:var(--font-body)] font-semibold text-sm tracking-[3px] uppercase hover:bg-[#F5C518] hover:text-black transition-all">
+                Learn More
+              </button>
+            </div>
           </div>
-        </RevealDiv>
+        </Reveal>
       </section>
 
-      {/* ── MEET THE DEV ── */}
-      <section className="dev-section" id="dev">
-        <RevealDiv>
-          <div className="section-label">The Creator</div>
-        </RevealDiv>
+      {/* ═══════════════════════════════════════════════════════
+          DEV / CREATOR
+          ═══════════════════════════════════════════════════════ */}
+      <section id="dev" className="py-28 md:py-40 px-6 md:px-16 relative">
+        {/* Top line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{
+            background:
+              "linear-gradient(to right, transparent, #F5C518, transparent)",
+            opacity: 0.15,
+          }}
+        />
 
-        <div className="dev-inner">
-          {/* Card */}
-          <RevealDiv delay={100}>
-            <div className="dev-card">
-              <div className="dev-avatar">S</div>
-              <div className="dev-name">SuryaNand PA</div>
-              <div className="dev-role">Lead Orchestration Architect</div>
-              <div className="dev-divider" />
-              <div className="social-links">
-                {SOCIALS.map((s) => (
-                  <a key={s.label} href={s.href} className="social-link">
-                    <span className="social-icon">{s.icon}</span>
-                    <span>
-                      <span style={{ display: "block", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", opacity: 0.5, marginBottom: 2 }}>{s.label}</span>
-                      {s.handle}
+        <div className="max-w-7xl mx-auto">
+          <Reveal>
+            <div className="flex items-center gap-3 mb-12">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] tracking-[4px] uppercase text-[#F5C518]">
+                The Creator
+              </span>
+              <div className="flex-1 max-w-[60px] h-px bg-[#F5C518]/30" />
+            </div>
+          </Reveal>
+
+          <div className="grid md:grid-cols-[380px_1fr] gap-16 md:gap-20">
+            {/* Creator card */}
+            <Reveal delay={100}>
+              <div className="bg-[#111] border border-[#F5C518]/10 p-10 md:p-12 relative overflow-hidden">
+                <div
+                  className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(245,197,24,0.08) 0%, transparent 70%)",
+                  }}
+                />
+
+                {/* Avatar */}
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center font-[family-name:var(--font-display)] text-3xl text-black mb-6 relative"
+                  style={{
+                    background: "linear-gradient(135deg, #F5C518, #C49A10)",
+                  }}
+                >
+                  S
+                  <div className="absolute inset-[-3px] rounded-full border border-[#F5C518]/30" />
+                </div>
+
+                <h3 className="font-[family-name:var(--font-display)] text-4xl tracking-[2px] mb-1">
+                  SuryaNand PA
+                </h3>
+                <div className="font-[family-name:var(--font-mono)] text-[11px] tracking-[3px] uppercase text-[#F5C518] mb-7">
+                  Lead Orchestration Architect
+                </div>
+                <div className="h-px bg-[#F5C518]/10 mb-7" />
+
+                {/* Social links */}
+                <div className="flex flex-col gap-1">
+                  {SOCIALS.map((s) => (
+                    <a
+                      key={s.label}
+                      href={s.href}
+                      className="flex items-center gap-3.5 py-3 text-white/45 hover:text-[#F5C518] transition-colors group border-b border-white/[0.04] last:border-b-0"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span className="w-8 h-8 border border-[#F5C518]/15 flex items-center justify-center text-sm shrink-0 group-hover:bg-[#F5C518] group-hover:text-black transition-all">
+                        {s.icon}
+                      </span>
+                      <span>
+                        <span className="block text-[10px] tracking-[2px] uppercase opacity-40 mb-0.5">
+                          {s.label}
+                        </span>
+                        <span className="text-sm font-light">{s.handle}</span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Bio */}
+            <Reveal delay={200}>
+              <div className="pt-2">
+                <h2 className="font-[family-name:var(--font-display)] text-[clamp(40px,5vw,64px)] leading-none tracking-[2px] mb-8">
+                  Built by someone who{" "}
+                  <span className="text-[#F5C518]">felt the friction</span>.
+                </h2>
+                <div className="space-y-5">
+                  <p className="text-base text-white/45 leading-[1.85] font-light max-w-lg">
+                    Loom wasn&rsquo;t born from a whiteboard — it came from
+                    spending weeks jumping between ChatGPT, Claude, Midjourney,
+                    Cursor, Perplexity, and a dozen other tools to build a
+                    single product. The context kept evaporating. The workflow
+                    kept breaking.
+                  </p>
+                  <p className="text-base text-white/45 leading-[1.85] font-light max-w-lg">
+                    So I built the thing I needed. A single orchestration layer
+                    that keeps everything in sync, remembers what you&rsquo;re
+                    building, and picks the right tool at the right time.
+                  </p>
+                  <p className="text-base text-white/45 leading-[1.85] font-light max-w-lg">
+                    Loom is what the AI ecosystem should feel like: unified,
+                    intelligent, and invisible.
+                  </p>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2.5 mt-10">
+                  {[
+                    "AI Orchestration",
+                    "Automation",
+                    "Developer Tools",
+                    "Workflow Design",
+                    "Full-Stack",
+                    "Open Source",
+                  ].map((t) => (
+                    <span
+                      key={t}
+                      className="px-4 py-2 border border-[#F5C518]/15 font-[family-name:var(--font-mono)] text-[11px] tracking-[2px] uppercase text-white/35 hover:text-[#F5C518] hover:border-[#F5C518]/40 transition-colors cursor-default"
+                    >
+                      {t}
                     </span>
-                  </a>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </RevealDiv>
-
-          {/* Bio */}
-          <RevealDiv delay={200}>
-            <div style={{ paddingTop: 8 }}>
-              <h2 className="dev-right">
-                Built by someone who <span>felt the friction</span>.
-              </h2>
-              <div className="dev-right">
-                <p>
-                  Loom wasn't born from a whiteboard — it came from spending weeks jumping between ChatGPT, Claude, Midjourney, Cursor, Perplexity, and a dozen other tools to build a single product. The context kept evaporating. The workflow kept breaking.
-                </p>
-                <p>
-                  So I built the thing I needed. A single orchestration layer that keeps everything in sync, remembers what you're building, and picks the right tool at the right time.
-                </p>
-                <p>
-                  Loom is what the AI ecosystem should feel like: unified, intelligent, and invisible.
-                </p>
-              </div>
-
-              <div className="dev-tags">
-                {["AI Orchestration", "Automation", "Developer Tools", "Workflow Design", "Full-Stack", "Open Source"].map(t => (
-                  <div key={t} className="dev-tag">{t}</div>
-                ))}
-              </div>
-            </div>
-          </RevealDiv>
+            </Reveal>
+          </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="footer-logo">LOOM</div>
-        <div className="footer-links">
-          <a href="#about">About</a>
-          <a href="#">Docs</a>
-          <a href="#">Privacy</a>
-          <a href="#">Contact</a>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          <div className="footer-copy">© 2025 Loom · Built by SuryaNand PA</div>
-          <div className="footer-copy" style={{ maxWidth: 420, textAlign: "right", lineHeight: 1.6 }}>
-            Loom is an experimental project built purely for fun. If the orchestration engine hallucinates, loops, or breaks reality, SuryaNand PA holds absolute zero liability. Use at your own risk.
+      {/* ═══════════════════════════════════════════════════════
+          FOOTER
+          ═══════════════════════════════════════════════════════ */}
+      <footer className="border-t border-[#F5C518]/10 px-6 md:px-16 py-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <span className="font-[family-name:var(--font-display)] text-2xl tracking-[4px] text-[#F5C518]">
+            LOOM
+          </span>
+
+          <div className="flex gap-8 flex-wrap justify-center">
+            {["About", "Docs", "Privacy", "Contact"].map((link) => (
+              <a
+                key={link}
+                href={link === "About" ? "#about" : "#"}
+                className="font-[family-name:var(--font-mono)] text-[11px] tracking-[2px] uppercase text-white/25 hover:text-[#F5C518] transition-colors"
+              >
+                {link}
+              </a>
+            ))}
+          </div>
+
+          <div className="text-center md:text-right">
+            <div className="font-[family-name:var(--font-mono)] text-[11px] tracking-[2px] text-white/20 mb-1">
+              © 2025 Loom · Built by SuryaNand PA
+            </div>
+            <div className="font-[family-name:var(--font-mono)] text-[10px] tracking-[1px] text-white/[0.12] max-w-[420px] leading-relaxed">
+              Loom is an experimental project built purely for fun. If the
+              orchestration engine hallucinates, loops, or breaks reality,
+              SuryaNand PA holds absolute zero liability. Use at your own risk.
+            </div>
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
