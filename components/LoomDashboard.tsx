@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
   Sparkles,
-  Bot,
   Code2,
   Database,
   Search,
@@ -19,8 +18,9 @@ import {
   Layers,
   ArrowLeft,
   Zap,
-  Clock,
   ChevronRight,
+  User,
+  Cpu
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -28,10 +28,10 @@ import {
    ═══════════════════════════════════════════════════════════════ */
 
 const LOADING_STAGES = [
-  { text: "Analyzing your request", icon: "🔍" },
-  { text: "Decomposing into subtasks", icon: "🧩" },
-  { text: "Searching the web for best models", icon: "🌐" },
-  { text: "Routing to optimal AI systems", icon: "⚡" },
+  { text: "Analyzing semantic intent", icon: <Search size={14} /> },
+  { text: "Decomposing into execution graph", icon: <Layers size={14} /> },
+  { text: "Evaluating live model benchmarks", icon: <Globe size={14} /> },
+  { text: "Provisioning AI routes", icon: <Zap size={14} /> },
 ];
 
 const QUICK_PROMPTS = [
@@ -63,77 +63,20 @@ interface WorkflowData {
 function getCategoryIcon(category: string) {
   switch (category) {
     case "frontend":
-      return <Code2 size={16} className="text-emerald-400" />;
+      return <Code2 size={16} />;
     case "backend":
-      return <Database size={16} className="text-blue-400" />;
+      return <Database size={16} />;
     case "branding":
-      return <Palette size={16} className="text-fuchsia-400" />;
+      return <Palette size={16} />;
     case "research":
-      return <Search size={16} className="text-amber-400" />;
+      return <Search size={16} />;
     case "design":
-      return <Layers size={16} className="text-pink-400" />;
+      return <Layers size={16} />;
     case "devops":
-      return <Server size={16} className="text-cyan-400" />;
+      return <Server size={16} />;
     default:
-      return <Terminal size={16} className="text-zinc-400" />;
+      return <Terminal size={16} />;
   }
-}
-
-function getCategoryColor(category: string) {
-  switch (category) {
-    case "frontend":
-      return "text-emerald-400";
-    case "backend":
-      return "text-blue-400";
-    case "branding":
-      return "text-fuchsia-400";
-    case "research":
-      return "text-amber-400";
-    case "design":
-      return "text-pink-400";
-    case "devops":
-      return "text-cyan-400";
-    default:
-      return "text-zinc-400";
-  }
-}
-
-function getCategoryBg(category: string) {
-  switch (category) {
-    case "frontend":
-      return "bg-emerald-500/8 border-emerald-500/15";
-    case "backend":
-      return "bg-blue-500/8 border-blue-500/15";
-    case "branding":
-      return "bg-fuchsia-500/8 border-fuchsia-500/15";
-    case "research":
-      return "bg-amber-500/8 border-amber-500/15";
-    case "design":
-      return "bg-pink-500/8 border-pink-500/15";
-    case "devops":
-      return "bg-cyan-500/8 border-cyan-500/15";
-    default:
-      return "bg-zinc-500/8 border-zinc-500/15";
-  }
-}
-
-function getModelColor(model: string) {
-  const m = model.toLowerCase();
-  if (m.includes("gpt"))
-    return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-  if (m.includes("claude"))
-    return "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20";
-  if (m.includes("gemini"))
-    return "bg-blue-500/10 text-blue-400 border-blue-500/20";
-  if (m.includes("llama"))
-    return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-  if (m.includes("mistral"))
-    return "bg-red-500/10 text-red-400 border-red-500/20";
-  if (m.includes("deepseek"))
-    return "bg-violet-500/10 text-violet-400 border-violet-500/20";
-  if (m.includes("grok"))
-    return "bg-sky-500/10 text-sky-400 border-sky-500/20";
-  return "bg-[#F5C518]/10 text-[#F5C518] border-[#F5C518]/20";
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -185,7 +128,7 @@ function generateActivityLog(workflow: WorkflowData): ActivityEntry[] {
   entries.push({
     id: 99,
     time: formatTime(now, 0),
-    message: "Orchestration complete — all tasks assigned",
+    message: "Orchestration complete — ready for execution",
     type: "complete",
   });
 
@@ -224,7 +167,7 @@ export default function LoomDashboard() {
     }
     const interval = setInterval(() => {
       setLoadingStage((prev) => (prev + 1) % LOADING_STAGES.length);
-    }, 2200);
+    }, 2000);
     return () => clearInterval(interval);
   }, [loading]);
 
@@ -266,38 +209,32 @@ export default function LoomDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-[#F7F7F2] font-[family-name:var(--font-body)] selection:bg-[#F5C518]/30">
-      {/* Film grain */}
-      <div className="noise-overlay" />
-
-      {/* Background glow */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[900px] h-[350px] bg-[#F5C518]/[0.06] blur-[140px] rounded-full pointer-events-none" />
-
+    <div className="min-h-screen bg-[#0A0A0A] text-zinc-100 font-sans selection:bg-white/20 flex flex-col">
       {/* ═══════════════════════════════════════════════════════
           HEADER
           ═══════════════════════════════════════════════════════ */}
-      <header className="border-b border-white/[0.06] bg-[#030303]/80 backdrop-blur-2xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header className="border-b border-white/[0.04] bg-[#0A0A0A] sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="text-white/25 hover:text-[#F5C518] transition-colors p-1"
+              className="text-zinc-500 hover:text-zinc-100 transition-colors p-1 rounded-md hover:bg-zinc-900"
               aria-label="Back to home"
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} />
             </Link>
-            <div className="w-px h-6 bg-white/[0.08]" />
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded bg-gradient-to-br from-[#F5C518] to-[#C49A10] flex items-center justify-center text-black font-[family-name:var(--font-display)] text-lg pt-0.5">
+            <div className="w-px h-4 bg-white/[0.08]" />
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-[4px] bg-white text-black flex items-center justify-center text-[10px] font-bold">
                 L
               </div>
-              <span className="font-[family-name:var(--font-display)] text-xl tracking-[4px] text-[#F5C518] pt-0.5">
-                LOOMER
+              <span className="font-medium text-sm text-zinc-200">
+                Loom Workspace
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3 font-[family-name:var(--font-mono)] text-[10px] tracking-[3px] uppercase text-white/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="flex items-center gap-3 text-[11px] font-medium text-zinc-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             <span className="hidden sm:inline">Engine Online</span>
           </div>
         </div>
@@ -306,408 +243,258 @@ export default function LoomDashboard() {
       {/* ═══════════════════════════════════════════════════════
           MAIN
           ═══════════════════════════════════════════════════════ */}
-      <main className="max-w-7xl mx-auto px-5 md:px-8 py-12 md:py-16 relative z-10">
-        {/* ── Input Section ── */}
-        <div className="max-w-3xl mx-auto mb-16 md:mb-20">
-          <h1 className="font-[family-name:var(--font-display)] text-[clamp(40px,6vw,72px)] tracking-[3px] text-center mb-2 leading-[0.95]">
-            What are we <span className="text-[#F5C518]">building</span>?
-          </h1>
-          <p className="text-center text-white/25 text-xs md:text-sm font-[family-name:var(--font-mono)] tracking-[2px] mb-10">
-            Loomer searches the web to find the best AI model for every step
-          </p>
-
-          {/* Search bar */}
-          <div className="relative group">
-            {/* Glow on focus */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#F5C518]/15 via-transparent to-[#F5C518]/10 rounded-2xl blur-lg opacity-0 group-focus-within:opacity-50 transition-opacity duration-700" />
-
-            <div className="relative flex bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-1.5 md:p-2 transition-all duration-300 focus-within:border-[#F5C518]/30">
-              <div className="flex-1 flex items-center pl-4 md:pl-5 pr-2 md:pr-3">
-                <Sparkles
-                  className="text-[#F5C518]/40 mr-3 shrink-0 hidden sm:block"
-                  size={20}
-                />
-                <input
-                  ref={inputRef}
-                  value={task}
-                  onChange={(e) => setTask(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && runWorkflow()}
-                  placeholder="Describe your next big idea..."
-                  className="w-full bg-transparent border-none outline-none text-base md:text-lg text-white placeholder:text-white/20 font-light"
-                />
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-12 relative flex flex-col">
+        
+        {/* Chat / Workflow Area */}
+        <div className="flex-1 overflow-y-auto pb-32">
+          
+          {/* ── Empty State ── */}
+          {!workflow && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="h-full flex flex-col items-center justify-center text-center mt-20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6 text-zinc-400">
+                <Sparkles size={24} />
               </div>
-              <button
-                onClick={() => runWorkflow()}
-                disabled={loading || !task}
-                className="bg-[#F5C518] text-black px-5 md:px-8 py-3 md:py-3.5 rounded-xl font-bold uppercase tracking-[2px] md:tracking-[3px] text-[11px] md:text-xs hover:bg-white transition-all disabled:opacity-40 disabled:hover:bg-[#F5C518] flex items-center gap-2 shrink-0 cursor-pointer"
-              >
-                {loading ? (
-                  <CircleDashed className="animate-spin" size={16} />
-                ) : (
-                  <Play size={16} className="fill-black" />
-                )}
-                <span className="hidden sm:inline">
-                  {loading ? "Searching…" : "Orchestrate"}
-                </span>
-              </button>
-            </div>
-          </div>
+              <h2 className="text-xl font-medium text-zinc-200 mb-2">
+                What can I help you orchestrate?
+              </h2>
+              <p className="text-sm text-zinc-500 max-w-sm mx-auto mb-8">
+                Describe your goal, and Loom will automatically design and route a multi-model workflow to achieve it.
+              </p>
 
-          {/* Quick prompts */}
-          <div className="flex flex-wrap justify-center gap-2.5 mt-6">
-            {QUICK_PROMPTS.map((p) => (
-              <button
-                key={p}
-                onClick={() => runWorkflow(p)}
-                disabled={loading}
-                className="text-[11px] font-[family-name:var(--font-mono)] text-white/25 border border-white/[0.06] bg-transparent px-4 py-2 rounded-full hover:text-[#F5C518] hover:border-[#F5C518]/20 transition-colors disabled:opacity-30 cursor-pointer"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+              <div className="flex flex-col gap-2 w-full max-w-md">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => runWorkflow(p)}
+                    disabled={loading}
+                    className="text-sm text-left text-zinc-400 bg-zinc-900/50 border border-zinc-800/50 px-4 py-3 rounded-lg hover:bg-zinc-800 hover:text-zinc-200 transition-colors disabled:opacity-50 flex items-center justify-between group"
+                  >
+                    <span className="truncate">{p}</span>
+                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-          {/* Error display */}
+          {/* ── Loading State ── */}
           <AnimatePresence>
-            {error && (
+            {loading && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                className="mt-6 p-4 bg-red-500/10 border border-red-500/15 text-red-400 rounded-xl text-center text-sm"
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-start gap-4 mb-8"
               >
-                {error}
+                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black shrink-0 mt-1">
+                  <Cpu size={16} className="animate-pulse" />
+                </div>
+                <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl p-4 md:p-6">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={loadingStage}
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 5 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-3 text-sm text-zinc-300"
+                    >
+                      <span className="text-zinc-500">{LOADING_STAGES[loadingStage].icon}</span>
+                      {LOADING_STAGES[loadingStage].text}
+                    </motion.div>
+                  </AnimatePresence>
+                  <div className="flex gap-1.5 mt-4">
+                    {LOADING_STAGES.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                          i <= loadingStage ? "bg-white" : "bg-zinc-800"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ═══════════════════════════════════════════════════════
+              WORKFLOW VISUALIZATION
+              ═══════════════════════════════════════════════════════ */}
+          <AnimatePresence mode="wait">
+            {workflow && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-8"
+              >
+                {/* User Message */}
+                <div className="flex items-start gap-4 flex-row-reverse">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-300 shrink-0 mt-1">
+                    <User size={16} />
+                  </div>
+                  <div className="bg-zinc-800 text-zinc-100 rounded-2xl rounded-tr-sm p-4 md:p-5 max-w-[85%] text-sm md:text-base leading-relaxed">
+                    {workflow.request}
+                  </div>
+                </div>
+
+                {/* AI Response Block */}
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black shrink-0 mt-1">
+                    <Cpu size={16} />
+                  </div>
+                  
+                  <div className="flex-1 space-y-4">
+                    <p className="text-sm md:text-base text-zinc-300 leading-relaxed pt-1.5">
+                      I've broken down this request into an orchestrated workflow. Here is the optimal execution path:
+                    </p>
+
+                    {/* ── Subtask Cards ── */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mt-6">
+                      {workflow.split.map((item: Subtask, i: number) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.1, duration: 0.3 }}
+                          className="bg-zinc-900 border border-zinc-800 p-4 md:p-5 rounded-xl hover:bg-zinc-900/80 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-zinc-500">{getCategoryIcon(item.category)}</span>
+                              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
+                                {item.category}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-zinc-600">Step 0{i + 1}</span>
+                          </div>
+
+                          <p className="text-sm text-zinc-200 mb-4 line-clamp-3 leading-relaxed">
+                            {item.task}
+                          </p>
+
+                          <div className="flex items-center justify-between mt-auto pt-3 border-t border-zinc-800/50">
+                            <div className="text-[11px] font-medium font-mono text-zinc-400 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                              {item.model}
+                            </div>
+                            <div className="text-[10px] text-zinc-500">Awaiting Run</div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* ── Synthesis Note ── */}
+                    <div className="mt-6 flex items-start gap-3 bg-zinc-900/50 border border-zinc-800/50 p-4 rounded-xl">
+                      <CheckCircle2 size={16} className="text-zinc-500 mt-0.5 shrink-0" />
+                      <p className="text-sm text-zinc-400">
+                        <span className="text-zinc-300 font-medium">Synthesis: </span>
+                        {workflow.synthesis}
+                      </p>
+                    </div>
+
+                    {/* ── Activity Feed Panel ── */}
+                    <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl overflow-hidden mt-2">
+                      <button
+                        onClick={() => setShowActivity(!showActivity)}
+                        className="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-800/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Terminal size={14} className="text-zinc-500" />
+                          <span className="text-xs font-mono text-zinc-400">
+                            Execution Log
+                          </span>
+                        </div>
+                        <ChevronRight
+                          size={14}
+                          className={`text-zinc-500 transition-transform duration-200 ${showActivity ? "rotate-90" : ""}`}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {showActivity && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="border-t border-zinc-800/50 px-4 py-2 bg-[#0A0A0A]">
+                              {activityLog.map((entry) => (
+                                <div
+                                  key={entry.id}
+                                  className="flex items-start gap-3 py-1.5"
+                                >
+                                  <span className="font-mono text-[10px] text-zinc-600 pt-0.5 shrink-0 w-12">
+                                    {entry.time}
+                                  </span>
+                                  <span className="font-mono text-[11px] text-zinc-400">
+                                    {entry.message}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* ── Loading State ── */}
-        <AnimatePresence>
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="max-w-md mx-auto text-center mb-20"
-            >
-              {/* Spinner */}
-              <div className="relative w-20 h-20 mx-auto mb-8">
-                <div className="absolute inset-0 rounded-full border-2 border-[#F5C518]/15" />
-                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#F5C518] animate-spin" />
-                <div className="absolute inset-2 rounded-full border border-[#F5C518]/8" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Zap size={20} className="text-[#F5C518]" />
-                </div>
+        {/* ── Input Section (Sticky Bottom) ── */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent">
+          <div className="max-w-3xl mx-auto relative group">
+            <div className="relative flex items-end bg-zinc-900 border border-zinc-800 rounded-2xl p-2 transition-all duration-200 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-600 shadow-lg">
+              <div className="flex-1 flex flex-col justify-center min-h-[48px] px-3">
+                <input
+                  ref={inputRef}
+                  value={task}
+                  onChange={(e) => setTask(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && runWorkflow()}
+                  placeholder="Ask Loom to orchestrate a task..."
+                  className="w-full bg-transparent border-none outline-none text-sm md:text-base text-zinc-100 placeholder:text-zinc-500 py-2"
+                />
               </div>
-
-              {/* Cycling stage messages */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={loadingStage}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex items-center justify-center gap-3"
-                >
-                  <span className="text-lg">
-                    {LOADING_STAGES[loadingStage].icon}
-                  </span>
-                  <span className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-[#F5C518]/50">
-                    {LOADING_STAGES[loadingStage].text}
-                  </span>
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Progress dots */}
-              <div className="flex justify-center gap-2 mt-6">
-                {LOADING_STAGES.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                      i === loadingStage
-                        ? "bg-[#F5C518] scale-125"
-                        : i < loadingStage
-                          ? "bg-[#F5C518]/30"
-                          : "bg-white/10"
-                    }`}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ═══════════════════════════════════════════════════════
-            WORKFLOW VISUALIZATION
-            ═══════════════════════════════════════════════════════ */}
-        <AnimatePresence mode="wait">
-          {workflow && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="space-y-6"
-            >
-              {/* ── Main Workflow Panel ── */}
-              <div className="bg-[#0A0A0A] border border-white/[0.06] rounded-3xl p-6 md:p-10 relative overflow-hidden">
-                {/* Top accent line */}
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#F5C518]/25 to-transparent" />
-
-                {/* Origin Node */}
-                <div className="flex justify-center mb-5">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-[#111] border border-white/[0.08] px-6 md:px-8 py-4 md:py-5 rounded-2xl text-center max-w-xl shadow-2xl relative"
-                  >
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-[#F5C518]/30" />
-                    <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#F5C518]/30" />
-                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-[#F5C518]/30" />
-                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-[#F5C518]/30" />
-
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Bot size={12} className="text-[#F5C518]" />
-                      <span className="font-[family-name:var(--font-mono)] text-[10px] tracking-[3px] uppercase text-[#F5C518]">
-                        Origin Request
-                      </span>
-                    </div>
-                    <p className="text-base md:text-lg font-light text-white/60">
-                      {workflow.request}
-                    </p>
-                  </motion.div>
-                </div>
-
-                {/* Badges */}
-                <div className="flex justify-center gap-3 flex-wrap mb-8 md:mb-10">
-                  {workflow.grounded && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/15 text-emerald-400 font-[family-name:var(--font-mono)] text-[10px] tracking-[2px] uppercase"
-                    >
-                      <Globe size={12} /> Web-Grounded — Live Search
-                    </motion.div>
-                  )}
-                  {workflow.workflowId && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/25 font-[family-name:var(--font-mono)] text-[10px] tracking-[2px] uppercase"
-                    >
-                      <Clock size={12} /> Saved:{" "}
-                      {workflow.workflowId.slice(0, 8)}…
-                    </motion.div>
-                  )}
-                </div>
-
-                {/* Connector */}
-                <div className="flex justify-center mb-6 md:mb-8">
-                  <motion.div
-                    initial={{ scaleY: 0 }}
-                    animate={{ scaleY: 1 }}
-                    transition={{ delay: 0.3, duration: 0.4 }}
-                    className="w-px h-8 bg-gradient-to-b from-white/15 to-transparent origin-top"
-                  />
-                </div>
-
-                {/* ── Subtask Cards ── */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                  {workflow.split.map((item: Subtask, i: number) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{
-                        delay: 0.4 + i * 0.12,
-                        duration: 0.5,
-                        ease: [0.16, 1, 0.3, 1],
-                      }}
-                      className="bg-[#111] border border-white/[0.06] p-5 md:p-6 rounded-2xl hover:border-[#F5C518]/15 transition-all duration-300 group relative overflow-hidden"
-                    >
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#F5C518]/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                      {/* Step indicator line */}
-                      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-transparent to-transparent group-hover:via-[#F5C518]/20 transition-all duration-500" />
-
-                      {/* Header */}
-                      <div className="flex items-center gap-3 mb-4 relative z-10">
-                        <div
-                          className={`w-10 h-10 rounded-xl border flex items-center justify-center ${getCategoryBg(item.category)}`}
-                        >
-                          {getCategoryIcon(item.category)}
-                        </div>
-                        <div>
-                          <div
-                            className={`font-[family-name:var(--font-mono)] text-[10px] tracking-[2px] uppercase ${getCategoryColor(item.category)}`}
-                          >
-                            {item.category}
-                          </div>
-                          <div className="text-[11px] text-white/20 font-medium">
-                            Step {i + 1} of {workflow.split.length}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Task description */}
-                      <p className="text-[15px] text-white/55 leading-relaxed font-light mb-4 relative z-10">
-                        {item.task}
-                      </p>
-
-                      {/* Model badge */}
-                      <div
-                        className={`px-3 py-2 rounded-lg border text-xs font-[family-name:var(--font-mono)] flex items-center gap-2 mb-3 relative z-10 ${getModelColor(item.model)}`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse shrink-0" />
-                        <span className="font-bold tracking-[2px] uppercase truncate">
-                          {item.model}
-                        </span>
-                      </div>
-
-                      {/* Reasoning */}
-                      {item.reasoning && (
-                        <div className="text-[11px] text-white/25 leading-relaxed border-t border-white/[0.04] pt-3 relative z-10">
-                          <span className="text-[#F5C518]/40 mr-1">💡</span>
-                          {item.reasoning}
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* ── Synthesis ── */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{
-                    delay: 0.4 + workflow.split.length * 0.12 + 0.3,
-                  }}
-                  className="mt-12 md:mt-16 text-center border-t border-white/[0.04] pt-8 md:pt-10"
-                >
-                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#F5C518]/10 border border-[#F5C518]/15 text-[#F5C518] font-[family-name:var(--font-mono)] text-xs md:text-sm tracking-[1px]">
-                    <CheckCircle2 size={16} />
-                    {workflow.synthesis}
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* ── Activity Feed Panel ── */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: 0.4 + workflow.split.length * 0.12 + 0.6,
-                }}
-                className="bg-[#0A0A0A] border border-white/[0.06] rounded-2xl overflow-hidden"
+              <button
+                onClick={() => runWorkflow()}
+                disabled={loading || !task}
+                className="bg-white text-black p-2 md:p-2.5 rounded-xl hover:bg-zinc-200 transition-all disabled:opacity-50 disabled:hover:bg-white shrink-0"
               >
-                {/* Feed header */}
-                <button
-                  onClick={() => setShowActivity(!showActivity)}
-                  className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/[0.02] transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#F5C518]/50 animate-pulse" />
-                    <span className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-white/30">
-                      Orchestration Log
-                    </span>
-                    <span className="font-[family-name:var(--font-mono)] text-[10px] text-white/15 bg-white/[0.04] px-2 py-0.5 rounded">
-                      {activityLog.length} events
-                    </span>
-                  </div>
-                  <ChevronRight
-                    size={14}
-                    className={`text-white/20 transition-transform duration-300 ${showActivity ? "rotate-90" : ""}`}
-                  />
-                </button>
-
-                {/* Feed content */}
-                <AnimatePresence>
-                  {showActivity && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                    >
-                      <div className="border-t border-white/[0.04] px-6 py-3 max-h-[280px] overflow-y-auto">
-                        {activityLog.map((entry, i) => (
-                          <motion.div
-                            key={entry.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: i * 0.06 }}
-                            className="flex items-start gap-3 py-2.5 border-b border-white/[0.03] last:border-b-0"
-                          >
-                            <span className="font-[family-name:var(--font-mono)] text-[10px] text-white/15 pt-0.5 shrink-0 w-16">
-                              {entry.time}
-                            </span>
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                                entry.type === "complete"
-                                  ? "bg-emerald-400"
-                                  : entry.type === "route"
-                                    ? "bg-[#F5C518]"
-                                    : entry.type === "search"
-                                      ? "bg-blue-400"
-                                      : "bg-white/20"
-                              }`}
-                            />
-                            <span className="font-[family-name:var(--font-mono)] text-[11px] text-white/35 leading-relaxed">
-                              {entry.message}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── Empty State ── */}
-        {!workflow && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center py-16 md:py-24"
-          >
-            <div className="relative w-24 h-24 mx-auto mb-8">
-              {/* Orbit ring */}
-              <div className="absolute inset-0 rounded-full border border-dashed border-[#F5C518]/10 animate-[spin_20s_linear_infinite]" />
-              <div className="absolute inset-3 rounded-full border border-[#F5C518]/[0.06]" />
-              {/* Center icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Sparkles size={24} className="text-[#F5C518]/20" />
-              </div>
-              {/* Orbiting dot */}
-              <div
-                className="absolute w-2 h-2 rounded-full bg-[#F5C518]/30 top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  animation: "spin 8s linear infinite",
-                  transformOrigin: "50% calc(50% + 48px)",
-                }}
-              />
+                {loading ? (
+                  <CircleDashed className="animate-spin text-black" size={18} />
+                ) : (
+                  <ArrowRight size={18} />
+                )}
+              </button>
             </div>
-            <p className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-white/15 mb-2">
-              Awaiting Instructions
-            </p>
-            <p className="text-sm text-white/20 font-light max-w-sm mx-auto">
-              Describe what you want to build and Loomer will decompose it
-              into tasks, search for the best models, and route each step
-              automatically.
-            </p>
-          </motion.div>
-        )}
+
+            {/* Error display */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  className="absolute -top-12 left-0 right-0 p-2 bg-red-950/50 border border-red-900 text-red-400 rounded-lg text-center text-xs"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </main>
     </div>
   );
