@@ -260,7 +260,8 @@ export default function LoomHero() {
           </a>
           <Link
             href="/dashboard"
-            className="mt-4 bg-[#F5C518] text-black px-10 py-4 font-[family-name:var(--font-body)] font-bold tracking-[3px] uppercase text-sm"
+            onClick={() => setMobileMenuOpen(false)}
+            className="mt-4 bg-[#F5C518] text-black px-8 py-3 font-[family-name:var(--font-body)] font-bold tracking-[3px] uppercase text-sm"
           >
             Launch Loomer
           </Link>
@@ -428,12 +429,12 @@ export default function LoomHero() {
 
           {/* CTA */}
           <div
-            className="flex items-center justify-center gap-6 mt-12 flex-wrap opacity-0"
+            className="flex items-center justify-center gap-4 md:gap-6 mt-10 md:mt-12 flex-col sm:flex-row opacity-0"
             style={{ animation: "fade-up 0.8s ease 1.1s forwards" }}
           >
             <Link
               href="/dashboard"
-              className="bg-[#F5C518] text-black px-10 py-4 font-[family-name:var(--font-body)] font-bold text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(245,197,24,0.35)]"
+              className="bg-[#F5C518] text-black px-8 py-3.5 md:px-10 md:py-4 font-[family-name:var(--font-body)] font-bold text-xs md:text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(245,197,24,0.35)] w-full sm:w-auto text-center"
               style={{
                 clipPath:
                   "polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))",
@@ -443,7 +444,7 @@ export default function LoomHero() {
             </Link>
             <a
               href="#about"
-              className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-white/25 hover:text-[#F5C518] transition-colors"
+              className="font-[family-name:var(--font-mono)] text-xs tracking-[3px] uppercase text-white/25 hover:text-[#F5C518] transition-colors py-2"
             >
               Learn More ↓
             </a>
@@ -794,10 +795,10 @@ export default function LoomHero() {
               Join the waitlist and be first to experience a unified AI
               workspace that actually thinks ahead.
             </p>
-            <div className="flex items-center justify-center gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/dashboard"
-                className="bg-[#F5C518] text-black px-12 py-5 font-[family-name:var(--font-body)] font-bold text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_48px_rgba(245,197,24,0.4)]"
+                className="bg-[#F5C518] text-black px-8 py-4 md:px-12 md:py-5 font-[family-name:var(--font-body)] font-bold text-xs md:text-sm tracking-[3px] uppercase hover:bg-white transition-all hover:-translate-y-1 hover:shadow-[0_12px_48px_rgba(245,197,24,0.4)] w-full sm:w-auto text-center"
                 style={{
                   clipPath:
                     "polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))",
@@ -805,7 +806,7 @@ export default function LoomHero() {
               >
                 Try Loom
               </Link>
-              <button className="border border-[#F5C518] text-[#F5C518] px-8 py-4 font-[family-name:var(--font-body)] font-semibold text-sm tracking-[3px] uppercase hover:bg-[#F5C518] hover:text-black transition-all">
+              <button className="border border-[#F5C518] text-[#F5C518] px-8 py-4 md:px-8 md:py-4 font-[family-name:var(--font-body)] font-semibold text-xs md:text-sm tracking-[3px] uppercase hover:bg-[#F5C518] hover:text-black transition-all w-full sm:w-auto">
                 Learn More
               </button>
             </div>
